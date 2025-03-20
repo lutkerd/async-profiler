@@ -81,6 +81,7 @@ public class JfrReader implements Closeable {
     private int cpuTimeSample;
     private int nativeLock;
     private boolean hasWallTimeSpan;
+    private int span;
 
     public JfrReader(String fileName) throws IOException {
         this.ch = FileChannel.open(Paths.get(fileName), StandardOpenOption.READ);
@@ -206,6 +207,8 @@ public class JfrReader implements Closeable {
                 if (cls == null || cls == ContendedLock.class) return (E) readContendedLock(true);
             } else if (type == nativeLock) {
                 if (cls == null || cls == NativeLockEvent.class) return (E) readNativeLockEvent();
+            } else if (type == span) {
+                if (cls == null || cls == Span.class) return (E) readSpan();
             } else if (type == activeSetting) {
                 readActiveSetting();
             } else {
@@ -305,6 +308,14 @@ public class JfrReader implements Closeable {
         long until = getVarlong();
         long address = getVarlong();
         return new ContendedLock(time, tid, stackTraceId, duration, classId);
+    }
+
+    private Span readSpan() {
+        long time = getVarlong();
+        long duration = getVarlong();
+        int tid = getVarint();
+        String tag = getString();
+        return new Span(time, tid, duration, tag);
     }
 
     private void readActiveSetting() {
@@ -613,6 +624,7 @@ public class JfrReader implements Closeable {
         free = getTypeId("profiler.Free");
         cpuTimeSample = getTypeId("jdk.CPUTimeSample");
         nativeLock = getTypeId("profiler.NativeLock");
+        span = getTypeId("profiler.Span");
 
         registerEvent("jdk.CPULoad", CPULoad.class);
         registerEvent("jdk.GCHeapSummary", GCHeapSummary.class);

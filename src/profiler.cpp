@@ -66,7 +66,7 @@ static CTimer ctimer;
 static ITimer itimer;
 static Instrument instrument;
 
-static ProfilingWindow profiling_window;
+static SpanEvent profiling_window;
 
 struct MethodSample {
     u64 samples;

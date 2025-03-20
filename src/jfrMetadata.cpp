@@ -297,6 +297,13 @@ JfrMetadata::JfrMetadata() : Element("root") {
                 << field("ioRead", T_LONG, "I/O Read Bytes", F_BYTES)
                 << field("ioWrite", T_LONG, "I/O Write Bytes", F_BYTES))
 
+            << (type("profiler.Span", T_SPAN, "Span")
+                << category("Profiler")
+                << field("startTime", T_LONG, "Start Time", F_TIME_TICKS)
+                << field("duration", T_LONG, "Duration", F_DURATION_TICKS)
+                << field("eventThread", T_THREAD, "Event Thread", F_CPOOL)
+                << field("name", T_STRING, "Name"))
+
             << (type("jdk.jfr.Label", T_LABEL, NULL)
                 << field("value", T_STRING))
 

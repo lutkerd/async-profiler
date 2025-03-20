@@ -1210,13 +1210,26 @@ class Recording {
         buf->put8(start, buf->offset() - start);
     }
 
-    void recordWindow(Buffer* buf, int tid, ProfilingWindow* event) {
+    void recordWindow(Buffer* buf, int tid, SpanEvent* event) {
         int start = buf->skip(1);
         buf->put8(T_WINDOW);
         buf->putVar64(event->_start_time);
         buf->putVar64(event->_end_time - event->_start_time);
         buf->putVar32(tid);
         buf->put8(start, buf->offset() - start);
+    }
+
+    void recordSpan(Buffer* buf, int tid, SpanEvent* event) {
+        // Considering MAX_STRING_LENGTH, total event size will always fit into two bytes
+        int start = buf->skip(2);
+        buf->put8(T_SPAN);
+        buf->putVar64(event->_start_time);
+        buf->putVar64(event->_end_time - event->_start_time);
+        buf->putVar32(tid);
+        buf->putUtf8(event->_tag);
+        u32 size = buf->offset() - start;
+        buf->put8(start, size | 0x80);
+        buf->put8(start + 1, size >> 7);
     }
 
     void recordCpuLoad(Buffer* buf, float proc_user, float proc_system, float machine_total) {
@@ -1456,7 +1469,10 @@ void FlightRecorder::recordEvent(int lock_index, int tid, u32 call_trace_id,
                 _rec->recordNativeLockSample(buf, tid, call_trace_id, (NativeLockEvent*)event);
                 break;
             case PROFILING_WINDOW:
-                _rec->recordWindow(buf, tid, (ProfilingWindow*)event);
+                _rec->recordWindow(buf, tid, (SpanEvent*)event);
+                break;
+            case SPAN:
+                _rec->recordSpan(buf, tid, (SpanEvent*)event);
                 break;
             case USER_EVENT:
                 _rec->recordUserEvent(buf, tid, (UserEvent*)event);
