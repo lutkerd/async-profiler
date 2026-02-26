@@ -1,0 +1,39 @@
+#!/usr/bin/make -f
+
+export DH_VERBOSE = 1
+
+JAVA_HOME ?= $(shell readlink -f /usr/bin/javac | sed 's|/bin/javac$$||')
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	$(MAKE) all JAVA_HOME="$(JAVA_HOME)"
+
+override_dh_auto_install:
+	# Binaries
+	install -d $(CURDIR)/debian/async-profiler/usr/bin
+	install -m 0755 build/bin/asprof $(CURDIR)/debian/async-profiler/usr/bin/asprof
+	install -m 0755 build/bin/jfrconv $(CURDIR)/debian/async-profiler/usr/bin/jfrconv
+
+	# Shared library
+	install -d $(CURDIR)/debian/async-profiler/usr/lib/async-profiler
+	install -m 0644 build/lib/libasyncProfiler.so $(CURDIR)/debian/async-profiler/usr/lib/async-profiler/libasyncProfiler.so
+
+	# Header
+	install -d $(CURDIR)/debian/async-profiler/usr/include
+	install -m 0644 build/include/asprof.h $(CURDIR)/debian/async-profiler/usr/include/asprof.h
+
+	# JARs
+	install -d $(CURDIR)/debian/async-profiler/usr/share/async-profiler
+	install -m 0644 build/jar/async-profiler.jar $(CURDIR)/debian/async-profiler/usr/share/async-profiler/async-profiler.jar
+	install -m 0644 build/jar/jfr-converter.jar $(CURDIR)/debian/async-profiler/usr/share/async-profiler/jfr-converter.jar
+
+override_dh_auto_test:
+	# Skip tests during package build
+
+override_dh_auto_clean:
+	$(MAKE) clean || true
+
+override_dh_strip:
+	dh_strip --dbgsym-migration='async-profiler-dbgsym (<< $(DEB_VERSION_UPSTREAM))'

@@ -1,0 +1,5 @@
+async-profiler (4.3-1) unstable; urgency=medium
+
+  * Package async-profiler for Debian/Ubuntu.
+
+ -- async-profiler authors <https://github.com/async-profiler/async-profiler>  Thu, 01 Jan 2025 00:00:00 +0000

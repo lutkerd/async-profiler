@@ -1,0 +1,30 @@
+Source: async-profiler
+Section: java
+Priority: optional
+Maintainer: async-profiler authors <https://github.com/async-profiler/async-profiler>
+Build-Depends: debhelper (>= 10),
+               default-jdk | java11-sdk | java17-sdk,
+               g++,
+               make,
+               patchelf
+Standards-Version: 4.5.0
+Homepage: https://github.com/async-profiler/async-profiler
+
+Package: async-profiler
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, default-jre-headless | java8-runtime-headless
+Description: Sampling CPU and HEAP profiler for Java
+ async-profiler is a low overhead sampling profiler for Java that does not
+ suffer from the safepoint bias problem. It features HotSpot-specific APIs
+ to collect stack traces and to track memory allocations. The profiler works
+ with OpenJDK, Oracle JDK, and other Java runtimes based on the HotSpot JVM.
+ .
+ Supported profiling modes include CPU, wall-clock, allocation, and lock
+ profiling, with output in flame graph, JFR, and other formats.
+
+Package: async-profiler-dbgsym
+Architecture: any
+Section: debug
+Depends: async-profiler (= ${binary:Version}), ${misc:Depends}
+Description: Debug symbols for async-profiler
+ Debug symbols for the async-profiler shared library.

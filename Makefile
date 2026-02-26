@@ -335,3 +335,67 @@ clean-coverage:
 
 clean:
 	$(RM) -r build
+
+# ============================================================================
+# Packaging targets
+# ============================================================================
+
+PKG_VERSION ?= $(PROFILER_VERSION)
+PKG_RELEASE ?= 1
+SPEC_FILE = packaging/rpm/async-profiler.spec
+RPM_TOPDIR = $(CURDIR)/build/rpmbuild
+DEB_BUILDDIR = $(CURDIR)/build/debbuild
+
+# Create a source tarball suitable for both RPM and DEB builds
+.PHONY: source-tarball
+source-tarball:
+	@echo "Creating source tarball async-profiler-$(PKG_VERSION).tar.gz ..."
+	mkdir -p $(RPM_TOPDIR)/SOURCES
+	git archive --format=tar.gz --prefix=async-profiler-$(PKG_VERSION)/ \
+		-o $(RPM_TOPDIR)/SOURCES/async-profiler-$(PKG_VERSION).tar.gz HEAD
+
+# Build a Source RPM (SRPM) — does not compile, just packages the spec + source
+.PHONY: srpm
+srpm: source-tarball
+	@echo "Building SRPM ..."
+	mkdir -p $(RPM_TOPDIR)/{BUILD,RPMS,SRPMS,SPECS}
+	cp $(SPEC_FILE) $(RPM_TOPDIR)/SPECS/
+	rpmbuild -bs \
+		--define "_topdir $(RPM_TOPDIR)" \
+		--define "version $(PKG_VERSION)" \
+		$(RPM_TOPDIR)/SPECS/async-profiler.spec
+	@echo "SRPM(s) written to $(RPM_TOPDIR)/SRPMS/"
+	@ls -1 $(RPM_TOPDIR)/SRPMS/*.src.rpm 2>/dev/null
+
+# Build binary RPM(s) from the spec (Amazon Linux / Fedora)
+.PHONY: rpm
+rpm: source-tarball
+	@echo "Building RPM ..."
+	mkdir -p $(RPM_TOPDIR)/{BUILD,RPMS,SRPMS,SPECS}
+	cp $(SPEC_FILE) $(RPM_TOPDIR)/SPECS/
+	rpmbuild -ba \
+		--define "_topdir $(RPM_TOPDIR)" \
+		--define "version $(PKG_VERSION)" \
+		$(RPM_TOPDIR)/SPECS/async-profiler.spec
+	@echo "RPM(s) written to $(RPM_TOPDIR)/RPMS/"
+	@find $(RPM_TOPDIR)/RPMS/ -name '*.rpm' 2>/dev/null
+
+# Build DEB package (Ubuntu / Debian)
+.PHONY: deb
+deb:
+	@echo "Building DEB ..."
+	$(RM) -r $(DEB_BUILDDIR)
+	mkdir -p $(DEB_BUILDDIR)/async-profiler-$(PKG_VERSION)
+	git archive --format=tar HEAD | tar -x -C $(DEB_BUILDDIR)/async-profiler-$(PKG_VERSION)
+	cp -a packaging/deb/debian $(DEB_BUILDDIR)/async-profiler-$(PKG_VERSION)/debian
+	# Update the version in debian/changelog to match PKG_VERSION
+	sed -i "1s/([^)]*)/($(PKG_VERSION)-$(PKG_RELEASE))/" \
+		$(DEB_BUILDDIR)/async-profiler-$(PKG_VERSION)/debian/changelog
+	cd $(DEB_BUILDDIR)/async-profiler-$(PKG_VERSION) && \
+		dpkg-buildpackage -us -uc -b
+	@echo "DEB(s) written to $(DEB_BUILDDIR)/"
+	@ls -1 $(DEB_BUILDDIR)/*.deb 2>/dev/null
+
+.PHONY: clean-packaging
+clean-packaging:
+	$(RM) -r $(RPM_TOPDIR) $(DEB_BUILDDIR)
